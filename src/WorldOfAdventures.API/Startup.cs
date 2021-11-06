@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
+using WorldOfAdventures.BusinessLogic;
+using WorldOfAdventures.DAL;
 
 namespace WorldOfAdventures.Api
 {
@@ -19,6 +22,17 @@ namespace WorldOfAdventures.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddSwaggerGen();
+
+            services.AddSingleton(sp =>
+            {
+                var client = new MongoClient(Configuration.GetConnectionString("MongoDb"));
+                // TODO: remove hard-code
+                return client.GetDatabase("WorldOfAdventures");
+            });
+
+            services.AddSingleton<IAdventureRepository, AdventureRepository>();
+            services.AddSingleton<IAdventureService, AdventureService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -30,6 +44,9 @@ namespace WorldOfAdventures.Api
             }
 
             app.UseHttpsRedirection();
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseRouting();
 

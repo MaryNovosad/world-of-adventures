@@ -1,0 +1,17 @@
+version: '3.4'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: MyUser
+        MONGO_INITDB_ROOT_PASSWORD: MyPassword
+    ports:
+        - 27017:27017
+
+  worldofadventures.api:
+    image: ${DOCKER_REGISTRY-}worldofadventuresapi
+    build:
+      context: .
+      dockerfile: src/WorldOfAdventures.Api/Dockerfile
