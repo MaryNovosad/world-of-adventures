@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using WorldOfAdventures.DAL.Models;
-using WorldOfAdventures.Models;
 
 namespace WorldOfAdventures.DAL
 {
@@ -28,12 +24,20 @@ namespace WorldOfAdventures.DAL
             await _adventures.InsertOneAsync(adventure);
         }
 
+        public async Task UpdateAsync(Adventure adventure)
+        {
+            var filter = Builders<Adventure>.Filter.Eq("Name", adventure.Name);
+            var toUpdate = Builders<Adventure>.Update.Set("InitialStep", adventure.InitialStep);
+
+            await _adventures.UpdateOneAsync(filter, toUpdate);
+        }
+
         public async Task<Adventure?> FindAsync(string adventureName)
         {
-            var filter = Builders<Adventure>.Filter.Eq("name", adventureName);
-            var adventure = await _adventures.FindAsync<Adventure>(filter);
+            var filter = Builders<Adventure>.Filter.Eq("Name", adventureName);
+            var adventures = await _adventures.FindAsync<Adventure>(filter);
 
-            return adventure.SingleOrDefault();
+            return adventures.SingleOrDefault();
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using WorldOfAdventures.Models;
+using WorldOfAdventures.DAL.Models;
 
 namespace WorldOfAdventures.DAL
 {
@@ -7,5 +7,6 @@ namespace WorldOfAdventures.DAL
     {
         Task<Adventure?> FindAsync(string adventureName);
         Task CreateAsync(Adventure adventure);
+        Task UpdateAsync(Adventure adventure);
     }
 }

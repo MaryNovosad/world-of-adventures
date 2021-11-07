@@ -32,6 +32,7 @@ namespace WorldOfAdventures.Api
             });
 
             services.AddSingleton<IAdventureRepository, AdventureRepository>();
+            services.AddSingleton<IUserAdventureRepository, UserAdventureRepository>();
             services.AddSingleton<IAdventureService, AdventureService>();
         }
 

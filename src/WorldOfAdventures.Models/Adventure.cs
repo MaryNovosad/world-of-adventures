@@ -9,11 +9,6 @@ namespace WorldOfAdventures.Models
             InitialStep = initialStep;
         }
 
-        public Adventure()
-        {
-
-        }
-
         public AdventureStep InitialStep { get; set; }
     }
 }
