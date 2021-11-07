@@ -9,5 +9,6 @@ namespace WorldOfAdventures.DAL
         Task<UserAdventure?> FindAsync(string userName, string adventureName);
         Task<ICollection<UserAdventure>> FindAsync(string adventureName);
         Task CreateAsync(UserAdventure userAdventure);
+        Task UpdateAsync(UserAdventure userAdventure);
     }
 }

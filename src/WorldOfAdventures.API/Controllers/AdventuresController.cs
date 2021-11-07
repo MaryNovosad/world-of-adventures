@@ -9,13 +9,13 @@ using WorldOfAdventures.Models;
 namespace WorldOfAdventures.Api.Controllers
 {
     [ApiController]
-    [Route("v1/adventure")]
-    public class AdventureController : ControllerBase
+    [Route("v1/[controller]")]
+    public class AdventuresController : ControllerBase
     {
         private readonly IAdventureService _adventureService;
-        private readonly ILogger<AdventureController> _logger;
+        private readonly ILogger<AdventuresController> _logger;
 
-        public AdventureController(IAdventureService adventureService, ILogger<AdventureController> logger)
+        public AdventuresController(IAdventureService adventureService, ILogger<AdventuresController> logger)
         {
             _adventureService = adventureService;
             _logger = logger;

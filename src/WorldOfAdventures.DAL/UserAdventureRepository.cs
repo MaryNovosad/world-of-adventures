@@ -17,12 +17,9 @@ namespace WorldOfAdventures.DAL
 
         public async Task<UserAdventure?> FindAsync(string userName, string adventureName)
         {
-            var adventureNameFilterDefinition = Builders<UserAdventure>.Filter.Eq("AdventureName", adventureName);
-            var userNameFilterDefinition = Builders<UserAdventure>.Filter.Eq("UserName", userName);
+            var filter = BuildFilterDefinitionBy(userName, adventureName);
 
-            var unitedFilter = Builders<UserAdventure>.Filter.And(adventureNameFilterDefinition, userNameFilterDefinition);
-
-            return (await _usersAdventures.FindAsync<UserAdventure>(unitedFilter)).SingleOrDefault();
+            return (await _usersAdventures.FindAsync<UserAdventure>(filter)).SingleOrDefault();
         }
 
         public async Task<ICollection<UserAdventure>> FindAsync(string adventureName)
@@ -32,9 +29,30 @@ namespace WorldOfAdventures.DAL
             return (await _usersAdventures.FindAsync<UserAdventure>(filter)).ToList();
         }
 
-        public Task CreateAsync(UserAdventure userAdventure)
+        public async Task CreateAsync(UserAdventure userAdventure)
         {
-            throw new NotImplementedException();
+            if (await FindAsync(userAdventure.UserName, userAdventure.AdventureName) != null)
+            {
+                throw new ArgumentException($"User {userAdventure.UserName} has already taken the adventure {userAdventure.AdventureName}");
+            }
+
+            await _usersAdventures.InsertOneAsync(userAdventure);
+        }
+
+        public async Task UpdateAsync(UserAdventure userAdventure)
+        {
+            var filter = BuildFilterDefinitionBy(userAdventure.UserName, userAdventure.AdventureName);
+            var toUpdate = Builders<UserAdventure>.Update.Set("InitialChoice", userAdventure.InitialChoice);
+
+            await _usersAdventures.UpdateOneAsync(filter, toUpdate);
+        }
+
+        private FilterDefinition<UserAdventure> BuildFilterDefinitionBy(string userName, string adventureName)
+        {
+            var adventureNameFilterDefinition = Builders<UserAdventure>.Filter.Eq("AdventureName", adventureName);
+            var userNameFilterDefinition = Builders<UserAdventure>.Filter.Eq("UserName", userName);
+
+            return Builders<UserAdventure>.Filter.And(adventureNameFilterDefinition, userNameFilterDefinition);
         }
     }
 }

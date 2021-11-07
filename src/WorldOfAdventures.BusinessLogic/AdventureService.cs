@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using WorldOfAdventures.DAL;
+using WorldOfAdventures.Models;
 using Adventure = WorldOfAdventures.Models.Adventure;
 using AdventureStep = WorldOfAdventures.Models.AdventureStep;
 
@@ -55,6 +56,136 @@ namespace WorldOfAdventures.BusinessLogic
             return MapAdventure(dbAdventure);
         }
 
+        public async Task<UserAdventure?> FindAsync(string userName, string adventureName)
+        {
+            var dbUserAdventure = await _userAdventureRepository.FindAsync(userName, adventureName);
+
+            if (dbUserAdventure == null)
+            {
+                return null;
+            }
+
+            var adventureStep = (await FindAsync(adventureName))?.InitialStep ?? throw new ArgumentException($"Adventure {adventureName} does not exist");
+
+            var userAdventureStep = MapUserAdventureStep(adventureStep);
+            var currentStep = userAdventureStep; 
+
+            var currentChoice = dbUserAdventure.InitialChoice;
+
+            // null checks
+
+            do
+            {
+                Func<UserAdventureStep, bool> answersMatch = s => s.Answer == currentChoice.Answer;
+                var chosenStep = currentStep.NextSteps?.SingleOrDefault(answersMatch);
+
+                if (chosenStep == null)
+                {
+                    throw new Exception("User adventure data is inconsistent");
+                }
+
+                chosenStep.IsChosen = true;
+
+                foreach (var step in currentStep.NextSteps.Where(s => !answersMatch(s)))
+                {
+                    step.IsChosen = false;
+                }
+
+                currentStep = chosenStep;
+                currentChoice = currentChoice.NextChoice;
+            } 
+            while (currentChoice != null);
+
+            return new UserAdventure(userName, adventureName, userAdventureStep);
+        }
+
+        public async Task ChooseAnswerAsync(string userName, string adventureName, UserChoice choice)
+        {
+            var existingUserAdventure = await _userAdventureRepository.FindAsync(userName, adventureName);
+
+            await ValidateUserChoiceAsync(adventureName, existingUserAdventure, choice);
+
+            if (existingUserAdventure == null)
+            {
+                var userAdventure = new DAL.Models.UserAdventure
+                {
+                    AdventureName = adventureName,
+                    UserName = userName,
+                    InitialChoice = new DAL.Models.UserChoice
+                    {
+                        Answer = choice.Answer
+                    }
+                };
+
+                await _userAdventureRepository.CreateAsync(userAdventure);
+            }
+            else
+            {
+                AppendNewAnswer(existingUserAdventure, choice.Answer);
+
+                await _userAdventureRepository.UpdateAsync(existingUserAdventure);
+            }
+        }
+
+        private void AppendNewAnswer(DAL.Models.UserAdventure existingUserAdventure, string answer)
+        {
+            var lastChoice = existingUserAdventure.InitialChoice;
+
+            while (lastChoice.NextChoice != null)
+            {
+                lastChoice = lastChoice.NextChoice;
+            }
+
+            lastChoice.NextChoice = new DAL.Models.UserChoice
+            {
+                Answer = answer
+            };
+        }
+
+        private async Task ValidateUserChoiceAsync(string adventureName, DAL.Models.UserAdventure? existingUserAdventure, UserChoice choice)
+        {
+            var adventureTemplate = await FindAsync(adventureName);
+
+            if (adventureTemplate == null)
+            {
+                throw new ArgumentException($"Adventure {adventureName} does not exist");
+            }
+
+            var currentUserChoice = existingUserAdventure?.InitialChoice;
+            var isInitialChoice = choice.AdventureLevel == 1;
+
+            var currentAdventureStep = adventureTemplate.InitialStep.NextSteps.SingleOrDefault(s => s.Answer ==
+                (currentUserChoice?.Answer ??
+                 (isInitialChoice
+                     ? choice.Answer
+                     : throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet"))));
+
+            for (int i = 1; i < choice.AdventureLevel; i++)
+            {
+                if (currentUserChoice == null)
+                {
+                    throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet");
+                }
+
+                currentUserChoice = currentUserChoice.NextChoice;
+                var answerToCompare = i == choice.AdventureLevel - 1 
+                    ? choice.Answer
+                    : currentUserChoice?.Answer ?? throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet");
+
+                currentAdventureStep = currentAdventureStep.NextSteps.SingleOrDefault(s => s.Answer == answerToCompare);
+            }
+
+            if (currentUserChoice != null)
+            {
+                throw new ArgumentException("User is already on a further step in his adventure journey");
+            }
+
+            if (currentAdventureStep == null)
+            {
+                throw new ArgumentException("It's not possible to choose such answer option on current adventure step");
+            }
+        }
+
         private DAL.Models.Adventure MapAdventure(Adventure adventure)
         {
             return new DAL.Models.Adventure
@@ -87,6 +218,11 @@ namespace WorldOfAdventures.BusinessLogic
                 Sentence = adventureStep.Sentence,
                 NextSteps = adventureStep.NextSteps?.Select(MapAdventureStep).ToList()
             };
+        }
+
+        private UserAdventureStep MapUserAdventureStep(AdventureStep adventureStep)
+        {
+            return new UserAdventureStep(adventureStep.Sentence, adventureStep.NextSteps?.Select(MapUserAdventureStep).ToList(), adventureStep.Answer);
         }
     }
 }

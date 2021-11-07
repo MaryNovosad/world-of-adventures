@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace WorldOfAdventures.Models
+namespace WorldOfAdventures.DAL.Models
 {
     public class AdventureStep
     {

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace WorldOfAdventures.DAL.Models
@@ -12,12 +11,5 @@ namespace WorldOfAdventures.DAL.Models
         public string Name { get; set; }
 
         public AdventureStep InitialStep { get; set; }
-    }
-
-    public class AdventureStep
-    {
-        public string? Answer { get; set; }
-        public string Sentence { get; set; }
-        public ICollection<AdventureStep>? NextSteps { get; set; }
     }
 }

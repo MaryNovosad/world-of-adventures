@@ -2,17 +2,18 @@ using System.Collections.Generic;
 
 namespace WorldOfAdventures.Models
 {
-    public class UserAdventureStep : AdventureStep
+    public class UserAdventureStep
     {
-        public UserAdventureStep()
+        public UserAdventureStep(string sentence, ICollection<UserAdventureStep>? nextSteps = null, string? answer = null)
         {
-
+            Sentence = sentence;
+            NextSteps = nextSteps;
+            Answer = answer;
         }
 
-        public UserAdventureStep(string sentence, ICollection<AdventureStep> nextSteps, string? answer) : base(sentence, nextSteps, answer)
-        {
-        }
-
-        public bool IsChosen { get; set; }
+        public string? Answer { get; set; }
+        public string Sentence { get; set; }
+        public ICollection<UserAdventureStep>? NextSteps { get; set; }
+        public bool? IsChosen { get; set; }
     }
 }
