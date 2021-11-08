@@ -10,11 +10,13 @@ namespace WorldOfAdventures.BusinessLogic
 {
     public class AdventureService : IAdventureService
     {
+        private readonly IValidationService _validationService;
         private readonly IAdventureRepository _adventureRepository;
         private readonly IUserAdventureRepository _userAdventureRepository;
 
-        public AdventureService(IAdventureRepository adventureRepository, IUserAdventureRepository userAdventureRepository)
+        public AdventureService(IValidationService validationService, IAdventureRepository adventureRepository, IUserAdventureRepository userAdventureRepository)
         {
+            _validationService = validationService;
             _adventureRepository = adventureRepository;
             _userAdventureRepository = userAdventureRepository;
         }
@@ -65,14 +67,51 @@ namespace WorldOfAdventures.BusinessLogic
                 return null;
             }
 
-            var adventureStep = (await FindAsync(adventureName))?.InitialStep ?? throw new ArgumentException($"Adventure {adventureName} does not exist");
+            return await RestoreUserAdventureTreeAsync(dbUserAdventure);
+        }
 
-            var userAdventureStep = MapUserAdventureStep(adventureStep);
-            var currentStep = userAdventureStep; 
+        public async Task ChooseAnswerAsync(string userName, string adventureName, UserChoice choice)
+        {
+            var userAdventureChoicesChain = await _userAdventureRepository.FindAsync(userName, adventureName);
 
-            var currentChoice = dbUserAdventure.InitialChoice;
+            await _validationService.ValidateUserChoice(adventureName, await RestoreUserAdventureTreeAsync(userAdventureChoicesChain), choice);
 
-            // null checks
+            if (userAdventureChoicesChain == null)
+            {
+                var userAdventure = new DAL.Models.UserAdventure
+                {
+                    AdventureName = adventureName,
+                    UserName = userName,
+                    InitialChoice = new DAL.Models.UserChoice
+                    {
+                        Answer = choice.Answer
+                    }
+                };
+
+                await _userAdventureRepository.CreateAsync(userAdventure);
+            }
+            else
+            {
+                AppendNewAnswer(userAdventureChoicesChain, choice.Answer);
+
+                await _userAdventureRepository.UpdateAsync(userAdventureChoicesChain);
+            }
+        }
+
+        // TODO: extract this logic to Factory which is able to construct adventure tree with highlighted user choices from adventure template and user choices chain
+        private async Task<UserAdventure?> RestoreUserAdventureTreeAsync(DAL.Models.UserAdventure? userAdventureChoicesChain)
+        {
+            if (userAdventureChoicesChain == null)
+            {
+                return null;
+            }
+
+            var initialStep = (await FindAsync(userAdventureChoicesChain.AdventureName))?.InitialStep ?? throw new ArgumentException($"Adventure {userAdventureChoicesChain.AdventureName} does not exist");
+
+            var userAdventureStep = MapUserAdventureStep(initialStep);
+            var currentStep = userAdventureStep;
+
+            var currentChoice = userAdventureChoicesChain.InitialChoice;
 
             do
             {
@@ -93,43 +132,15 @@ namespace WorldOfAdventures.BusinessLogic
 
                 currentStep = chosenStep;
                 currentChoice = currentChoice.NextChoice;
-            } 
+            }
             while (currentChoice != null);
 
-            return new UserAdventure(userName, adventureName, userAdventureStep);
+            return new UserAdventure(userAdventureChoicesChain.UserName, userAdventureChoicesChain.AdventureName, userAdventureStep);
         }
 
-        public async Task ChooseAnswerAsync(string userName, string adventureName, UserChoice choice)
+        private void AppendNewAnswer(DAL.Models.UserAdventure userAdventureChoicesChain, string answer)
         {
-            var existingUserAdventure = await _userAdventureRepository.FindAsync(userName, adventureName);
-
-            await ValidateUserChoiceAsync(adventureName, existingUserAdventure, choice);
-
-            if (existingUserAdventure == null)
-            {
-                var userAdventure = new DAL.Models.UserAdventure
-                {
-                    AdventureName = adventureName,
-                    UserName = userName,
-                    InitialChoice = new DAL.Models.UserChoice
-                    {
-                        Answer = choice.Answer
-                    }
-                };
-
-                await _userAdventureRepository.CreateAsync(userAdventure);
-            }
-            else
-            {
-                AppendNewAnswer(existingUserAdventure, choice.Answer);
-
-                await _userAdventureRepository.UpdateAsync(existingUserAdventure);
-            }
-        }
-
-        private void AppendNewAnswer(DAL.Models.UserAdventure existingUserAdventure, string answer)
-        {
-            var lastChoice = existingUserAdventure.InitialChoice;
+            var lastChoice = userAdventureChoicesChain.InitialChoice;
 
             while (lastChoice.NextChoice != null)
             {
@@ -140,50 +151,6 @@ namespace WorldOfAdventures.BusinessLogic
             {
                 Answer = answer
             };
-        }
-
-        private async Task ValidateUserChoiceAsync(string adventureName, DAL.Models.UserAdventure? existingUserAdventure, UserChoice choice)
-        {
-            var adventureTemplate = await FindAsync(adventureName);
-
-            if (adventureTemplate == null)
-            {
-                throw new ArgumentException($"Adventure {adventureName} does not exist");
-            }
-
-            var currentUserChoice = existingUserAdventure?.InitialChoice;
-            var isInitialChoice = choice.AdventureLevel == 1;
-
-            var currentAdventureStep = adventureTemplate.InitialStep.NextSteps.SingleOrDefault(s => s.Answer ==
-                (currentUserChoice?.Answer ??
-                 (isInitialChoice
-                     ? choice.Answer
-                     : throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet"))));
-
-            for (int i = 1; i < choice.AdventureLevel; i++)
-            {
-                if (currentUserChoice == null)
-                {
-                    throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet");
-                }
-
-                currentUserChoice = currentUserChoice.NextChoice;
-                var answerToCompare = i == choice.AdventureLevel - 1 
-                    ? choice.Answer
-                    : currentUserChoice?.Answer ?? throw new ArgumentException("User hasn't passed the earlier steps of his adventure journey yet");
-
-                currentAdventureStep = currentAdventureStep.NextSteps.SingleOrDefault(s => s.Answer == answerToCompare);
-            }
-
-            if (currentUserChoice != null)
-            {
-                throw new ArgumentException("User is already on a further step in his adventure journey");
-            }
-
-            if (currentAdventureStep == null)
-            {
-                throw new ArgumentException("It's not possible to choose such answer option on current adventure step");
-            }
         }
 
         private DAL.Models.Adventure MapAdventure(Adventure adventure)

@@ -27,13 +27,15 @@ namespace WorldOfAdventures.Api
             services.AddSingleton(sp =>
             {
                 var client = new MongoClient(Configuration.GetConnectionString("MongoDb"));
-                // TODO: remove hard-code
+
                 return client.GetDatabase("WorldOfAdventures");
             });
 
             services.AddSingleton<IAdventureRepository, AdventureRepository>();
             services.AddSingleton<IUserAdventureRepository, UserAdventureRepository>();
-            services.AddSingleton<IAdventureService, AdventureService>();
+
+            services.AddTransient<IValidationService, ValidationService>();
+            services.AddTransient<IAdventureService, AdventureService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

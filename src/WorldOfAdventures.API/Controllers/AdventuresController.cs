@@ -9,7 +9,7 @@ using WorldOfAdventures.Models;
 namespace WorldOfAdventures.Api.Controllers
 {
     [ApiController]
-    [Route("v1/[controller]")]
+    [Route("v1/adventures")]
     public class AdventuresController : ControllerBase
     {
         private readonly IAdventureService _adventureService;

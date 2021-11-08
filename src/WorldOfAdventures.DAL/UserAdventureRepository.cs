@@ -29,20 +29,20 @@ namespace WorldOfAdventures.DAL
             return (await _usersAdventures.FindAsync<UserAdventure>(filter)).ToList();
         }
 
-        public async Task CreateAsync(UserAdventure userAdventure)
+        public async Task CreateAsync(UserAdventure userAdventureChoicesChain)
         {
-            if (await FindAsync(userAdventure.UserName, userAdventure.AdventureName) != null)
+            if (await FindAsync(userAdventureChoicesChain.UserName, userAdventureChoicesChain.AdventureName) != null)
             {
-                throw new ArgumentException($"User {userAdventure.UserName} has already taken the adventure {userAdventure.AdventureName}");
+                throw new ArgumentException($"User {userAdventureChoicesChain.UserName} has already taken the adventure {userAdventureChoicesChain.AdventureName}");
             }
 
-            await _usersAdventures.InsertOneAsync(userAdventure);
+            await _usersAdventures.InsertOneAsync(userAdventureChoicesChain);
         }
 
-        public async Task UpdateAsync(UserAdventure userAdventure)
+        public async Task UpdateAsync(UserAdventure userAdventureChoicesChain)
         {
-            var filter = BuildFilterDefinitionBy(userAdventure.UserName, userAdventure.AdventureName);
-            var toUpdate = Builders<UserAdventure>.Update.Set("InitialChoice", userAdventure.InitialChoice);
+            var filter = BuildFilterDefinitionBy(userAdventureChoicesChain.UserName, userAdventureChoicesChain.AdventureName);
+            var toUpdate = Builders<UserAdventure>.Update.Set("InitialChoice", userAdventureChoicesChain.InitialChoice);
 
             await _usersAdventures.UpdateOneAsync(filter, toUpdate);
         }

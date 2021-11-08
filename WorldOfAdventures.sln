@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31825.309
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldOfAdventures.API", "src\WorldOfAdventures.API\WorldOfAdventures.API.csproj", "{EEAEF945-4686-4A9D-B3A5-DB5144A2E71D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldOfAdventures.Tests", "tests\WorldOfAdvantures.Tests\WorldOfAdventures.Tests.csproj", "{30D9D4BF-A293-488A-8BBD-F8F57284A9DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldOfAdventures.UnitTests", "tests\WorldOfAdvantures.UnitTests\WorldOfAdventures.UnitTests.csproj", "{30D9D4BF-A293-488A-8BBD-F8F57284A9DA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldOfAdventures.Models", "src\WorldOfAdventures.Models\WorldOfAdventures.Models.csproj", "{E313C69C-2E76-489C-917F-263EB8EC2453}"
 EndProject
